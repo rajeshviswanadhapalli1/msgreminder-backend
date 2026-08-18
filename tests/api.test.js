@@ -243,6 +243,13 @@ describe('Reminders', () => {
 });
 
 describe('Health', () => {
+  test('root returns API info', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.docs).toBe('/api/docs');
+  });
+
   test('health check returns ok', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);

@@ -21,9 +21,9 @@ async function start() {
       console.log(`MySQL database: ${env.db.name} @ ${env.db.host}`);
     }
 
-    const server = app.listen(env.port, () => {
-      console.log(`Server running on http://localhost:${env.port}`);
-      console.log(`API docs: http://localhost:${env.port}/api/docs`);
+    const server = app.listen(env.port, '0.0.0.0', () => {
+      console.log(`Server running on port ${env.port}`);
+      console.log(`API docs: /api/docs`);
     });
 
     const shutdown = async (signal) => {

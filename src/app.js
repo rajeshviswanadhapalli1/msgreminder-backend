@@ -21,6 +21,16 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Message Reminder API',
+    status: 'ok',
+    docs: '/api/docs',
+    health: '/health',
+    api: '/api/v1',
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
