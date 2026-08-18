@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build
+dist/
+build/
+.expo/
+.expo-shared/
+
+# React Native
+android/.gradle/
+android/.idea/
+android/app/build/
+android/build/
+android/local.properties
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Cache
+.cache/
+.parcel-cache/
+.nx/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+
+# Secrets / certificates
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+
+# EAS
+.eas/
+
+# Temporary files
+*.tmp
+*.temp

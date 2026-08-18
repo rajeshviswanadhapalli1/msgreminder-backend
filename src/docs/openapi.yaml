@@ -1,0 +1,445 @@
+openapi: 3.0.3
+info:
+  title: Message Reminder API
+  version: 1.0.0
+  description: |
+    REST API for the Message Reminder mobile app.
+    All authenticated requests require `Authorization: Bearer <token>`.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Reminders
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        country:
+          type: string
+        countryCode:
+          type: string
+          example: "+91"
+        mobile:
+          type: string
+        timezone:
+          type: string
+          example: Asia/Kolkata
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          nullable: true
+        message:
+          type: string
+          maxLength: 500
+        category:
+          type: string
+          enum: [general, birthday, meeting, anniversary, other]
+        scheduledAt:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        repeat:
+          type: string
+          enum: [none, daily, weekly, monthly, yearly]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [pending, completed]
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        seriesId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        hasNextPage:
+          type: boolean
+        hasPrevPage:
+          type: boolean
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, country, countryCode, mobile, password]
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                country:
+                  type: string
+                countryCode:
+                  type: string
+                mobile:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                timezone:
+                  type: string
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email or mobile already exists
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Generic success message
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset; returns new auth token
+
+  /users/me:
+    get:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      summary: Get current user profile
+      responses:
+        '200':
+          description: Profile
+    patch:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      summary: Update profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                country:
+                  type: string
+                countryCode:
+                  type: string
+                mobile:
+                  type: string
+                timezone:
+                  type: string
+      responses:
+        '200':
+          description: Updated profile
+
+  /users/me/password:
+    patch:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed
+
+  /reminders:
+    get:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: List reminders
+      parameters:
+        - in: query
+          name: view
+          schema:
+            type: string
+            enum: [upcoming, all, completed]
+            default: upcoming
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Paginated reminders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reminder'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: Create reminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, scheduledAt]
+              properties:
+                title:
+                  type: string
+                message:
+                  type: string
+                  maxLength: 500
+                category:
+                  type: string
+                scheduledAt:
+                  type: string
+                  format: date-time
+                timezone:
+                  type: string
+                repeat:
+                  type: string
+                priority:
+                  type: string
+      responses:
+        '201':
+          description: Created reminder
+
+  /reminders/{id}:
+    get:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: Get reminder details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reminder details
+        '404':
+          description: Not found
+    patch:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: Update reminder
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Updated reminder
+    delete:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: Delete reminder
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted
+
+  /reminders/{id}/complete:
+    post:
+      tags: [Reminders]
+      security: [{ bearerAuth: [] }]
+      summary: Mark reminder complete
+      description: |
+        For non-repeating reminders, marks as completed.
+        For repeating reminders, completes current occurrence and creates the next pending one.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Completion result with optional next occurrence
