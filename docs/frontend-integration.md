@@ -153,11 +153,30 @@ After password change, replace stored token or force re-login.
 | All         | `GET /reminders?view=all`      |
 | Completed   | `GET /reminders?view=completed`|
 
+All list and search responses are sorted by **`createdAt` descending** (newest added reminder first).
+
 **Example:**
 
 ```
 GET /reminders?view=upcoming&page=1&limit=20
 Authorization: Bearer <token>
+```
+
+### Search by title
+
+**Endpoint:** `GET /reminders/search?title=Birthday`
+
+`title` is required. Match is case-insensitive and partial (`Mom` matches `Mom's Birthday`). Search defaults to `view=all`. Optional `view`, `page`, and `limit` work the same as the list API.
+
+```
+GET /reminders/search?title=Mom&view=upcoming&page=1&limit=20
+Authorization: Bearer <token>
+```
+
+You can also pass `title` on the list endpoint:
+
+```
+GET /reminders?view=all&title=Birthday
 ```
 
 **Response:**
@@ -343,6 +362,7 @@ Show `error.message` in the UI. Use `error.details` for field-level form errors.
 | Home — Upcoming     | `GET /reminders?view=upcoming` |
 | Home — All          | `GET /reminders?view=all` |
 | Home — Completed    | `GET /reminders?view=completed` |
+| Search reminders    | `GET /reminders/search?title=Birthday` |
 | Add Reminder        | `POST /reminders` |
 | Edit Reminder       | `PATCH /reminders/:id` |
 | Reminder Details    | `GET /reminders/:id`, `POST /reminders/:id/complete`, `DELETE /reminders/:id` |

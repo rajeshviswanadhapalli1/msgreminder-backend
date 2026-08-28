@@ -37,6 +37,19 @@ const reminderIdRules = [param('id').isUUID().withMessage('Invalid reminder id')
 
 const listReminderRules = [
   query('view').optional().isIn(VIEW_VALUES),
+  query('title').optional().trim().isLength({ min: 1, max: 120 }),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 50 }),
+];
+
+const searchReminderRules = [
+  query('title')
+    .trim()
+    .notEmpty()
+    .withMessage('title is required')
+    .isLength({ min: 1, max: 120 })
+    .withMessage('title must be between 1 and 120 characters'),
+  query('view').optional().isIn(VIEW_VALUES),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 50 }),
 ];
@@ -46,4 +59,5 @@ module.exports = {
   updateReminderRules,
   reminderIdRules,
   listReminderRules,
+  searchReminderRules,
 };

@@ -18,6 +18,18 @@ async function list(req, res, next) {
   }
 }
 
+async function search(req, res, next) {
+  try {
+    const result = await reminderService.listReminders(req.user.id, {
+      ...req.query,
+      view: req.query.view || 'all',
+    });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getById(req, res, next) {
   try {
     const reminder = await reminderService.getReminderById(req.user.id, req.params.id);
@@ -57,6 +69,7 @@ async function complete(req, res, next) {
 module.exports = {
   create,
   list,
+  search,
   getById,
   update,
   remove,

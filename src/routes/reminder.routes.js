@@ -7,6 +7,7 @@ const {
   updateReminderRules,
   reminderIdRules,
   listReminderRules,
+  searchReminderRules,
 } = require('../validators/reminder.validator');
 
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get('/', listReminderRules, validate, reminderController.list);
+router.get('/search', searchReminderRules, validate, reminderController.search);
 router.post('/', createReminderRules, validate, reminderController.create);
 router.get('/:id', reminderIdRules, validate, reminderController.getById);
 router.patch('/:id', updateReminderRules, validate, reminderController.update);

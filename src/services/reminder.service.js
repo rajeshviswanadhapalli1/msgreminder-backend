@@ -1,10 +1,15 @@
+const { Op, fn, col, where: sqlWhere } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const { Reminder } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { parsePagination, buildMeta } = require('../utils/pagination');
 const { computeNextScheduledAt, isValidTimezone } = require('../utils/recurrence');
 
-function buildListWhere(userId, view) {
+function escapeLike(value) {
+  return value.replace(/[\\%_]/g, '\\$&');
+}
+
+function buildListWhere(userId, view, title) {
   const where = { userId };
 
   switch (view) {
@@ -19,14 +24,23 @@ function buildListWhere(userId, view) {
       break;
   }
 
+  if (title && title.trim()) {
+    const term = `%${escapeLike(title.trim().toLowerCase())}%`;
+    where[Op.and] = [
+      {
+        [Op.or]: [
+          sqlWhere(fn('LOWER', fn('COALESCE', col('title'), '')), { [Op.like]: term }),
+          sqlWhere(fn('LOWER', col('message')), { [Op.like]: term }),
+        ],
+      },
+    ];
+  }
+
   return where;
 }
 
-function buildListOrder(view) {
-  if (view === 'completed') {
-    return [['completedAt', 'DESC'], ['scheduledAt', 'DESC']];
-  }
-  return [['scheduledAt', 'ASC']];
+function buildListOrder() {
+  return [['createdAt', 'DESC']];
 }
 
 async function createReminder(userId, data) {
@@ -65,8 +79,8 @@ async function listReminders(userId, query) {
   }
 
   const { page, limit, offset } = parsePagination(query);
-  const where = buildListWhere(userId, view);
-  const order = buildListOrder(view);
+  const where = buildListWhere(userId, view, query.title);
+  const order = buildListOrder();
 
   const { rows, count } = await Reminder.findAndCountAll({
     where,

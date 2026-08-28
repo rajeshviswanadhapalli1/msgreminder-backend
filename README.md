@@ -73,6 +73,7 @@ Swagger UI: `http://localhost:3000/api/docs`
 | PATCH | `/api/v1/users/me` | Yes | Update profile |
 | PATCH | `/api/v1/users/me/password` | Yes | Change password |
 | GET | `/api/v1/reminders` | Yes | List reminders |
+| GET | `/api/v1/reminders/search` | Yes | Search reminders by title |
 | POST | `/api/v1/reminders` | Yes | Create reminder |
 | GET | `/api/v1/reminders/:id` | Yes | Get reminder |
 | PATCH | `/api/v1/reminders/:id` | Yes | Update reminder |

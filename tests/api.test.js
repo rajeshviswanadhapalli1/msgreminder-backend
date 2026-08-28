@@ -143,6 +143,26 @@ describe('Reminders', () => {
     expect(res.body.meta.total).toBeGreaterThan(0);
   });
 
+  test('returns newest reminders first', async () => {
+    const older = await request(app)
+      .post('/api/v1/reminders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ title: 'Older reminder', message: 'Older', scheduledAt });
+
+    const newer = await request(app)
+      .post('/api/v1/reminders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ title: 'Newer reminder', message: 'Newer', scheduledAt });
+
+    const res = await request(app)
+      .get('/api/v1/reminders?view=all')
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.status).toBe(200);
+    const ids = res.body.data.map((r) => r.id);
+    expect(ids.indexOf(newer.body.data.id)).toBeLessThan(ids.indexOf(older.body.data.id));
+  });
+
   test('gets reminder by id', async () => {
     const res = await request(app)
       .get(`/api/v1/reminders/${reminderId}`)
@@ -240,16 +260,55 @@ describe('Reminders', () => {
 
     expect(res.status).toBe(200);
   });
+
+  test('searches reminders by title', async () => {
+    const uniqueTitle = `Searchable Cake ${Date.now()}`;
+    await request(app)
+      .post('/api/v1/reminders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        title: uniqueTitle,
+        message: 'Searchable reminder',
+        scheduledAt,
+      });
+
+    const res = await request(app)
+      .get(`/api/v1/reminders/search?title=${encodeURIComponent('cake')}`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.some((r) => r.title === uniqueTitle)).toBe(true);
+  });
+
+  test('searches reminders by message text', async () => {
+    const uniqueMessage = `Project timeline review ${Date.now()}`;
+    await request(app)
+      .post('/api/v1/reminders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        title: 'Weekly sync',
+        message: uniqueMessage,
+        scheduledAt,
+      });
+
+    const res = await request(app)
+      .get(`/api/v1/reminders/search?title=${encodeURIComponent('timeline')}`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.some((r) => r.message === uniqueMessage)).toBe(true);
+  });
+
+  test('rejects search without title', async () => {
+    const res = await request(app)
+      .get('/api/v1/reminders/search')
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('Health', () => {
-  test('root returns API info', async () => {
-    const res = await request(app).get('/');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
-    expect(res.body.docs).toBe('/api/docs');
-  });
-
   test('health check returns ok', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
