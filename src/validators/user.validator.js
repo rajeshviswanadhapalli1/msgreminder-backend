@@ -12,8 +12,8 @@ const updateProfileRules = [
 const changePasswordRules = [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
   body('newPassword')
-    .isLength({ min: 8 })
-    .withMessage('New password must be at least 8 characters')
+    .isLength({ min: 4 })
+    .withMessage('New password must be at least 4 characters')
     .isLength({ max: 128 }),
 ];
 

@@ -7,8 +7,8 @@ const registerRules = [
   body('countryCode').trim().notEmpty().withMessage('Country code is required').isLength({ max: 8 }),
   body('mobile').trim().notEmpty().withMessage('Mobile number is required').isLength({ max: 20 }),
   body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
+    .isLength({ min: 4 })
+    .withMessage('Password must be at least 4 characters')
     .isLength({ max: 128 }),
   body('timezone').optional().isString().isLength({ max: 64 }),
 ];
@@ -25,8 +25,8 @@ const forgotPasswordRules = [
 const resetPasswordRules = [
   body('token').trim().notEmpty().withMessage('Reset token is required'),
   body('newPassword')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
+    .isLength({ min: 4 })
+    .withMessage('Password must be at least 4 characters')
     .isLength({ max: 128 }),
 ];
 

@@ -172,7 +172,7 @@ paths:
                   type: string
                 password:
                   type: string
-                  minLength: 8
+                  minLength: 4
                 timezone:
                   type: string
       responses:
@@ -257,7 +257,7 @@ paths:
                   type: string
                 newPassword:
                   type: string
-                  minLength: 8
+                  minLength: 4
       responses:
         '200':
           description: Password reset; returns new auth token
@@ -311,6 +311,7 @@ paths:
                   type: string
                 newPassword:
                   type: string
+                  minLength: 4
       responses:
         '200':
           description: Password changed
