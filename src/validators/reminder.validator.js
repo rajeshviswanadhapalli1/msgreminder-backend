@@ -19,6 +19,7 @@ const createReminderRules = [
   body('timezone').optional().isString().isLength({ max: 64 }),
   body('repeat').optional().isIn(REPEAT_VALUES),
   body('priority').optional().isIn(PRIORITY_VALUES),
+  body('volume').optional().isInt({ min: 0, max: 100 }).withMessage('volume must be between 0 and 100'),
 ];
 
 const updateReminderRules = [
@@ -30,6 +31,7 @@ const updateReminderRules = [
   body('timezone').optional().isString().isLength({ max: 64 }),
   body('repeat').optional().isIn(REPEAT_VALUES),
   body('priority').optional().isIn(PRIORITY_VALUES),
+  body('volume').optional().isInt({ min: 0, max: 100 }).withMessage('volume must be between 0 and 100'),
   body('status').optional().isIn(STATUS_VALUES),
 ];
 

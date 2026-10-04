@@ -39,6 +39,12 @@ function buildListWhere(userId, view, title) {
   return where;
 }
 
+function clampVolume(value) {
+  const volume = Number(value);
+  if (!Number.isFinite(volume)) return 100;
+  return Math.max(0, Math.min(100, Math.round(volume)));
+}
+
 function buildListOrder() {
   return [['createdAt', 'DESC']];
 }
@@ -65,6 +71,7 @@ async function createReminder(userId, data) {
     timezone,
     repeat: data.repeat || 'none',
     priority: data.priority || 'medium',
+    volume: clampVolume(data.volume),
     status: 'pending',
     seriesId,
   });
@@ -123,6 +130,7 @@ async function updateReminder(userId, reminderId, updates) {
   if (updates.category !== undefined) allowed.category = updates.category;
   if (updates.repeat !== undefined) allowed.repeat = updates.repeat;
   if (updates.priority !== undefined) allowed.priority = updates.priority;
+  if (updates.volume !== undefined) allowed.volume = clampVolume(updates.volume);
   if (updates.timezone !== undefined) {
     if (!isValidTimezone(updates.timezone)) {
       throw ApiError.badRequest('Invalid timezone');
@@ -211,6 +219,7 @@ async function completeReminder(userId, reminderId) {
     timezone: reminder.timezone,
     repeat: reminder.repeat,
     priority: reminder.priority,
+    volume: reminder.volume ?? 100,
     status: 'pending',
     seriesId: reminder.seriesId || reminder.id,
   });

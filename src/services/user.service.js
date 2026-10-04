@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
-const { normalizeMobile } = require('../utils/pagination');
+const { normalizeEmail, normalizeMobile } = require('../utils/pagination');
 const { isValidTimezone } = require('../utils/recurrence');
 
 async function getProfile(userId) {
@@ -16,6 +16,7 @@ async function updateProfile(userId, updates) {
 
   const allowed = {};
   if (updates.fullName !== undefined) allowed.fullName = updates.fullName.trim();
+  if (updates.email !== undefined) allowed.email = normalizeEmail(updates.email);
   if (updates.country !== undefined) allowed.country = updates.country.trim();
   if (updates.countryCode !== undefined) allowed.countryCode = updates.countryCode.trim();
   if (updates.mobile !== undefined) allowed.mobile = normalizeMobile(updates.mobile);
@@ -24,6 +25,16 @@ async function updateProfile(userId, updates) {
       throw ApiError.badRequest('Invalid timezone');
     }
     allowed.timezone = updates.timezone;
+  }
+
+  if (allowed.email) {
+    const existingEmail = await User.findOne({
+      where: {
+        email: allowed.email,
+        id: { [Op.ne]: userId },
+      },
+    });
+    if (existingEmail) throw ApiError.conflict('Email is already registered');
   }
 
   if (allowed.countryCode && allowed.mobile) {

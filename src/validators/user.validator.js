@@ -2,6 +2,7 @@ const { body } = require('express-validator');
 
 const updateProfileRules = [
   body('fullName').optional().trim().notEmpty().isLength({ max: 120 }),
+  body('email').optional().trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('country').optional().trim().notEmpty().isLength({ max: 80 }),
   body('countryCode').optional().trim().notEmpty().isLength({ max: 8 }),
   body('mobile').optional().trim().notEmpty().isLength({ max: 20 }),

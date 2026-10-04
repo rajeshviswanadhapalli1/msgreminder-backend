@@ -48,6 +48,11 @@ class Reminder extends Model {
           allowNull: false,
           defaultValue: 'medium',
         },
+        volume: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          defaultValue: 100,
+        },
         status: {
           type: DataTypes.ENUM('pending', 'completed'),
           allowNull: false,
@@ -89,6 +94,7 @@ class Reminder extends Model {
       timezone: values.timezone,
       repeat: values.repeat,
       priority: values.priority,
+      volume: values.volume ?? 100,
       status: values.status,
       completedAt: values.completedAt,
       seriesId: values.seriesId,

@@ -107,6 +107,11 @@ components:
         priority:
           type: string
           enum: [low, medium, high]
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Ring volume for this reminder, from 0 to 100
         status:
           type: string
           enum: [pending, completed]
@@ -381,6 +386,10 @@ paths:
                   type: string
                 priority:
                   type: string
+                volume:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
       responses:
         '201':
           description: Created reminder
