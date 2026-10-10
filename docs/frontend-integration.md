@@ -231,6 +231,8 @@ Use the user's profile timezone (`user.timezone`) as default when creating remin
 
 **Endpoint:** `POST /reminders`
 
+Send `multipart/form-data` when the reminder includes a photo. JSON still works when there is no image.
+
 ```json
 {
   "title": "Mom's Birthday",
@@ -250,6 +252,9 @@ Use the user's profile timezone (`user.timezone`) as default when creating remin
 | `repeat`     | `none`, `daily`, `weekly`, `monthly`, `yearly` |
 | `priority`   | `low`, `medium`, `high` |
 | `category`   | `general`, `birthday`, `meeting`, `anniversary`, `other` |
+| `image`      | Optional file (`jpg`, `jpeg`, `png`, `gif`, `webp`, max 5MB). Stored on Cloudinary. The response includes `imageUrl`. |
+
+On edit, send a new `image` file to replace the photo, or `removeImage=true` to clear it.
 
 ### Update
 

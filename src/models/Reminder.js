@@ -53,6 +53,16 @@ class Reminder extends Model {
           allowNull: false,
           defaultValue: 100,
         },
+        imageUrl: {
+          type: DataTypes.STRING(2048),
+          allowNull: true,
+          field: 'image_url',
+        },
+        imagePublicId: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+          field: 'image_public_id',
+        },
         status: {
           type: DataTypes.ENUM('pending', 'completed'),
           allowNull: false,
@@ -95,6 +105,7 @@ class Reminder extends Model {
       repeat: values.repeat,
       priority: values.priority,
       volume: values.volume ?? 100,
+      imageUrl: values.imageUrl || null,
       status: values.status,
       completedAt: values.completedAt,
       seriesId: values.seriesId,

@@ -14,8 +14,27 @@ const registerRules = [
 ];
 
 const loginRules = [
-  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required'),
+  body('email').optional({ values: 'falsy' }).trim(),
+  body('mobile').optional({ values: 'falsy' }).trim(),
+  body().custom((_, { req }) => {
+    const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+    const mobile = typeof req.body.mobile === 'string' ? req.body.mobile.trim() : '';
+    const value = email || mobile;
+    if (!value) {
+      throw new Error('Email or mobile number is required');
+    }
+    if (value.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        throw new Error('Enter a valid email or mobile number');
+      }
+      return true;
+    }
+    if (value.replace(/\D/g, '').length < 6) {
+      throw new Error('Enter a valid email or mobile number');
+    }
+    return true;
+  }),
 ];
 
 const forgotPasswordRules = [

@@ -33,6 +33,7 @@ const updateReminderRules = [
   body('priority').optional().isIn(PRIORITY_VALUES),
   body('volume').optional().isInt({ min: 0, max: 100 }).withMessage('volume must be between 0 and 100'),
   body('status').optional().isIn(STATUS_VALUES),
+  body('removeImage').optional().isIn(['true', 'false', '1', '0']),
 ];
 
 const reminderIdRules = [param('id').isUUID().withMessage('Invalid reminder id')];

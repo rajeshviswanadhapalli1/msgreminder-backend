@@ -1,8 +1,16 @@
 const reminderService = require('../services/reminder.service');
 
+function uploadedImage(req) {
+  if (!req.file) return null;
+  return {
+    imageUrl: req.file.path,
+    imagePublicId: req.file.filename,
+  };
+}
+
 async function create(req, res, next) {
   try {
-    const reminder = await reminderService.createReminder(req.user.id, req.body);
+    const reminder = await reminderService.createReminder(req.user.id, req.body, uploadedImage(req));
     res.status(201).json({ data: reminder });
   } catch (err) {
     next(err);
@@ -41,7 +49,12 @@ async function getById(req, res, next) {
 
 async function update(req, res, next) {
   try {
-    const reminder = await reminderService.updateReminder(req.user.id, req.params.id, req.body);
+    const reminder = await reminderService.updateReminder(
+      req.user.id,
+      req.params.id,
+      req.body,
+      uploadedImage(req)
+    );
     res.json({ data: reminder });
   } catch (err) {
     next(err);

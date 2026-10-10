@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { User, PasswordResetToken } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { signToken } = require('../utils/jwt');
@@ -61,17 +62,43 @@ async function register(data) {
   return buildAuthResponse(user);
 }
 
-async function login(email, password) {
-  const normalizedEmail = normalizeEmail(email);
-  const user = await User.findOne({ where: { email: normalizedEmail } });
+async function findUserByLogin(identifier) {
+  const value = String(identifier || '').trim();
+  if (!value) return null;
+
+  if (value.includes('@')) {
+    return User.findOne({ where: { email: normalizeEmail(value) } });
+  }
+
+  const digits = normalizeMobile(value);
+  if (!digits) return null;
+
+  const tail = digits.length > 10 ? digits.slice(-10) : digits;
+  const candidates = await User.findAll({
+    where: {
+      [Op.or]: [{ mobile: digits }, { mobile: tail }],
+    },
+  });
+
+  const matches = candidates.filter(user => {
+    const code = String(user.countryCode || '').replace(/\D/g, '');
+    const mobile = String(user.mobile || '');
+    return mobile === digits || `${code}${mobile}` === digits;
+  });
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+async function login(identifier, password) {
+  const user = await findUserByLogin(identifier);
 
   if (!user) {
-    throw ApiError.unauthorized('Invalid email or password');
+    throw ApiError.unauthorized('Invalid email, mobile number, or password');
   }
 
   const valid = await user.comparePassword(password);
   if (!valid) {
-    throw ApiError.unauthorized('Invalid email or password');
+    throw ApiError.unauthorized('Invalid email, mobile number, or password');
   }
 
   return buildAuthResponse(user);

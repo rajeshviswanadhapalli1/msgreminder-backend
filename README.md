@@ -94,6 +94,8 @@ SMTP_FROM="Message Reminder <noreply@example.com>"
 PASSWORD_RESET_URL=myapp://reset-password
 ```
 
+Reminder photos use Cloudinary. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`, then send the image as the `image` field on `POST /api/v1/reminders` (`multipart/form-data`). Run `npm run migrate` so the `image_url` column exists.
+
 In development without SMTP, reset tokens are printed to the server console.
 
 ## Tests

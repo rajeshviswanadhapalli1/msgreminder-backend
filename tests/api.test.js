@@ -55,6 +55,27 @@ describe('Auth', () => {
     authToken = res.body.data.token;
   });
 
+  test('logs in with mobile number', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ mobile: testUser.mobile, password: testUser.password });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.email).toBe(testUser.email.toLowerCase());
+  });
+
+  test('logs in with country code and mobile', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        mobile: `${testUser.countryCode}${testUser.mobile}`,
+        password: testUser.password,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.token).toBeDefined();
+  });
+
   test('rejects invalid login', async () => {
     const res = await request(app)
       .post('/api/v1/auth/login')

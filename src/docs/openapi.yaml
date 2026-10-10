@@ -112,6 +112,10 @@ components:
           minimum: 0
           maximum: 100
           description: Ring volume for this reminder, from 0 to 100
+        imageUrl:
+          type: string
+          nullable: true
+          description: Cloudinary URL of the reminder image
         status:
           type: string
           enum: [pending, completed]
@@ -391,6 +395,31 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 100
+          multipart/form-data:
+            schema:
+              type: object
+              required: [message, scheduledAt]
+              properties:
+                title:
+                  type: string
+                message:
+                  type: string
+                category:
+                  type: string
+                scheduledAt:
+                  type: string
+                timezone:
+                  type: string
+                repeat:
+                  type: string
+                priority:
+                  type: string
+                volume:
+                  type: integer
+                image:
+                  type: string
+                  format: binary
+                  description: Optional reminder image, uploaded to Cloudinary (max 5MB)
       responses:
         '201':
           description: Created reminder

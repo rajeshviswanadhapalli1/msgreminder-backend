@@ -1,6 +1,7 @@
 const { Op, fn, col, where: sqlWhere } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const { Reminder } = require('../models');
+const { cloudinary } = require('../config/cloudinary');
 const ApiError = require('../utils/ApiError');
 const { parsePagination, buildMeta } = require('../utils/pagination');
 const { computeNextScheduledAt, isValidTimezone } = require('../utils/recurrence');
@@ -39,6 +40,25 @@ function buildListWhere(userId, view, title) {
   return where;
 }
 
+async function destroyImageIfUnused(publicId) {
+  if (!publicId) return;
+  const stillUsed = await Reminder.count({ where: { imagePublicId: publicId } });
+  if (stillUsed > 0) return;
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete reminder image from Cloudinary:', err.message);
+  }
+}
+
+function imageFields(image) {
+  if (!image) return { imageUrl: null, imagePublicId: null };
+  return {
+    imageUrl: image.imageUrl,
+    imagePublicId: image.imagePublicId,
+  };
+}
+
 function clampVolume(value) {
   const volume = Number(value);
   if (!Number.isFinite(volume)) return 100;
@@ -49,34 +69,42 @@ function buildListOrder() {
   return [['createdAt', 'DESC']];
 }
 
-async function createReminder(userId, data) {
+async function createReminder(userId, data, image = null) {
   const timezone = data.timezone || 'UTC';
   if (!isValidTimezone(timezone)) {
+    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
     throw ApiError.badRequest('Invalid timezone');
   }
 
   const scheduledAt = new Date(data.scheduledAt);
   if (Number.isNaN(scheduledAt.getTime())) {
+    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
     throw ApiError.badRequest('Invalid scheduledAt');
   }
 
   const seriesId = data.repeat !== 'none' ? uuidv4() : null;
 
-  const reminder = await Reminder.create({
-    userId,
-    title: data.title?.trim() || null,
-    message: data.message.trim(),
-    category: data.category || 'general',
-    scheduledAt,
-    timezone,
-    repeat: data.repeat || 'none',
-    priority: data.priority || 'medium',
-    volume: clampVolume(data.volume),
-    status: 'pending',
-    seriesId,
-  });
+  try {
+    const reminder = await Reminder.create({
+      userId,
+      title: data.title?.trim() || null,
+      message: data.message.trim(),
+      category: data.category || 'general',
+      scheduledAt,
+      timezone,
+      repeat: data.repeat || 'none',
+      priority: data.priority || 'medium',
+      volume: clampVolume(data.volume),
+      ...imageFields(image),
+      status: 'pending',
+      seriesId,
+    });
 
-  return reminder.toJSON();
+    return reminder.toJSON();
+  } catch (err) {
+    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    throw err;
+  }
 }
 
 async function listReminders(userId, query) {
@@ -114,12 +142,17 @@ async function getReminderById(userId, reminderId) {
   return reminder.toJSON();
 }
 
-async function updateReminder(userId, reminderId, updates) {
+function shouldRemoveImage(value) {
+  return value === true || value === 'true' || value === '1';
+}
+
+async function updateReminder(userId, reminderId, updates, image = null) {
   const reminder = await Reminder.findOne({
     where: { id: reminderId, userId },
   });
 
   if (!reminder) {
+    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
     throw ApiError.notFound('Reminder not found');
   }
 
@@ -133,6 +166,7 @@ async function updateReminder(userId, reminderId, updates) {
   if (updates.volume !== undefined) allowed.volume = clampVolume(updates.volume);
   if (updates.timezone !== undefined) {
     if (!isValidTimezone(updates.timezone)) {
+      if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
       throw ApiError.badRequest('Invalid timezone');
     }
     allowed.timezone = updates.timezone;
@@ -140,6 +174,7 @@ async function updateReminder(userId, reminderId, updates) {
   if (updates.scheduledAt !== undefined) {
     const scheduledAt = new Date(updates.scheduledAt);
     if (Number.isNaN(scheduledAt.getTime())) {
+      if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
       throw ApiError.badRequest('Invalid scheduledAt');
     }
     allowed.scheduledAt = scheduledAt;
@@ -158,7 +193,26 @@ async function updateReminder(userId, reminderId, updates) {
     allowed.seriesId = uuidv4();
   }
 
-  await reminder.update(allowed);
+  const previousPublicId = reminder.imagePublicId;
+  if (image) {
+    allowed.imageUrl = image.imageUrl;
+    allowed.imagePublicId = image.imagePublicId;
+  } else if (shouldRemoveImage(updates.removeImage)) {
+    allowed.imageUrl = null;
+    allowed.imagePublicId = null;
+  }
+
+  try {
+    await reminder.update(allowed);
+  } catch (err) {
+    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    throw err;
+  }
+
+  if ((image || shouldRemoveImage(updates.removeImage)) && previousPublicId && previousPublicId !== image?.imagePublicId) {
+    await destroyImageIfUnused(previousPublicId);
+  }
+
   return reminder.toJSON();
 }
 
@@ -171,7 +225,9 @@ async function deleteReminder(userId, reminderId) {
     throw ApiError.notFound('Reminder not found');
   }
 
+  const publicId = reminder.imagePublicId;
   await reminder.destroy();
+  await destroyImageIfUnused(publicId);
   return { message: 'Reminder deleted successfully' };
 }
 
@@ -220,6 +276,8 @@ async function completeReminder(userId, reminderId) {
     repeat: reminder.repeat,
     priority: reminder.priority,
     volume: reminder.volume ?? 100,
+    imageUrl: reminder.imageUrl,
+    imagePublicId: reminder.imagePublicId,
     status: 'pending',
     seriesId: reminder.seriesId || reminder.id,
   });

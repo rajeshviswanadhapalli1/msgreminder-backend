@@ -40,6 +40,11 @@ const env = {
   },
   passwordResetUrl: getEnv('PASSWORD_RESET_URL', 'https://yourapp.com/reset-password'),
   corsOrigin: getEnv('CORS_ORIGIN', '*'),
+  cloudinary: {
+    cloudName: getEnv('CLOUDINARY_CLOUD_NAME', ''),
+    apiKey: getEnv('CLOUDINARY_API_KEY', ''),
+    apiSecret: getEnv('CLOUDINARY_API_SECRET', ''),
+  },
 };
 
 module.exports = env;
