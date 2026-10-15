@@ -1,6 +1,7 @@
 const { Op, fn, col, where: sqlWhere } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const { Reminder } = require('../models');
+const env = require('../config/env');
 const { cloudinary } = require('../config/cloudinary');
 const ApiError = require('../utils/ApiError');
 const { parsePagination, buildMeta } = require('../utils/pagination');
@@ -59,6 +60,53 @@ function imageFields(image) {
   };
 }
 
+function imageFromClientUrl(data) {
+  if (data.imageUrl === undefined || data.imageUrl === null || data.imageUrl === '') {
+    return null;
+  }
+
+  const imageUrl = String(data.imageUrl).trim();
+  let parsed;
+  try {
+    parsed = new URL(imageUrl);
+  } catch {
+    throw ApiError.badRequest('imageUrl must be a valid URL');
+  }
+
+  const cloudName = env.cloudinary.cloudName || 'ddgvpgr1v';
+  const parts = parsed.pathname.split('/').filter(Boolean);
+  const isCloudinaryImage =
+    parsed.protocol === 'https:' &&
+    parsed.hostname === 'res.cloudinary.com' &&
+    parts[0] === cloudName &&
+    parts[1] === 'image' &&
+    parts[2] === 'upload';
+
+  if (!isCloudinaryImage) {
+    throw ApiError.badRequest('imageUrl must be a Cloudinary image URL');
+  }
+
+  const assetParts = parts.slice(3);
+  if (assetParts[0] && /^v\d+$/.test(assetParts[0])) {
+    assetParts.shift();
+  }
+  const fileName = assetParts.pop();
+  if (!fileName) {
+    throw ApiError.badRequest('imageUrl must be a Cloudinary image URL');
+  }
+  const publicId = [...assetParts, fileName.replace(/\.[^.]+$/, '')].join('/');
+
+  return {
+    imageUrl: parsed.toString(),
+    imagePublicId: publicId || null,
+  };
+}
+
+function resolveImage(uploadedImage, data) {
+  if (uploadedImage?.imageUrl) return uploadedImage;
+  return imageFromClientUrl(data);
+}
+
 function clampVolume(value) {
   const volume = Number(value);
   if (!Number.isFinite(volume)) return 100;
@@ -70,15 +118,16 @@ function buildListOrder() {
 }
 
 async function createReminder(userId, data, image = null) {
+  const resolvedImage = resolveImage(image, data);
   const timezone = data.timezone || 'UTC';
   if (!isValidTimezone(timezone)) {
-    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
     throw ApiError.badRequest('Invalid timezone');
   }
 
   const scheduledAt = new Date(data.scheduledAt);
   if (Number.isNaN(scheduledAt.getTime())) {
-    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
     throw ApiError.badRequest('Invalid scheduledAt');
   }
 
@@ -95,14 +144,14 @@ async function createReminder(userId, data, image = null) {
       repeat: data.repeat || 'none',
       priority: data.priority || 'medium',
       volume: clampVolume(data.volume),
-      ...imageFields(image),
+      ...imageFields(resolvedImage),
       status: 'pending',
       seriesId,
     });
 
     return reminder.toJSON();
   } catch (err) {
-    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
     throw err;
   }
 }
@@ -147,12 +196,13 @@ function shouldRemoveImage(value) {
 }
 
 async function updateReminder(userId, reminderId, updates, image = null) {
+  const resolvedImage = resolveImage(image, updates);
   const reminder = await Reminder.findOne({
     where: { id: reminderId, userId },
   });
 
   if (!reminder) {
-    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
     throw ApiError.notFound('Reminder not found');
   }
 
@@ -166,7 +216,7 @@ async function updateReminder(userId, reminderId, updates, image = null) {
   if (updates.volume !== undefined) allowed.volume = clampVolume(updates.volume);
   if (updates.timezone !== undefined) {
     if (!isValidTimezone(updates.timezone)) {
-      if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+      if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
       throw ApiError.badRequest('Invalid timezone');
     }
     allowed.timezone = updates.timezone;
@@ -174,7 +224,7 @@ async function updateReminder(userId, reminderId, updates, image = null) {
   if (updates.scheduledAt !== undefined) {
     const scheduledAt = new Date(updates.scheduledAt);
     if (Number.isNaN(scheduledAt.getTime())) {
-      if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+      if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
       throw ApiError.badRequest('Invalid scheduledAt');
     }
     allowed.scheduledAt = scheduledAt;
@@ -194,9 +244,9 @@ async function updateReminder(userId, reminderId, updates, image = null) {
   }
 
   const previousPublicId = reminder.imagePublicId;
-  if (image) {
-    allowed.imageUrl = image.imageUrl;
-    allowed.imagePublicId = image.imagePublicId;
+  if (resolvedImage) {
+    allowed.imageUrl = resolvedImage.imageUrl;
+    allowed.imagePublicId = resolvedImage.imagePublicId;
   } else if (shouldRemoveImage(updates.removeImage)) {
     allowed.imageUrl = null;
     allowed.imagePublicId = null;
@@ -205,11 +255,11 @@ async function updateReminder(userId, reminderId, updates, image = null) {
   try {
     await reminder.update(allowed);
   } catch (err) {
-    if (image?.imagePublicId) await destroyImageIfUnused(image.imagePublicId);
+    if (resolvedImage?.imagePublicId) await destroyImageIfUnused(resolvedImage.imagePublicId);
     throw err;
   }
 
-  if ((image || shouldRemoveImage(updates.removeImage)) && previousPublicId && previousPublicId !== image?.imagePublicId) {
+  if ((resolvedImage || shouldRemoveImage(updates.removeImage)) && previousPublicId && previousPublicId !== resolvedImage?.imagePublicId) {
     await destroyImageIfUnused(previousPublicId);
   }
 

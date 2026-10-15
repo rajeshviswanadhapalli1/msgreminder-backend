@@ -20,6 +20,10 @@ const createReminderRules = [
   body('repeat').optional().isIn(REPEAT_VALUES),
   body('priority').optional().isIn(PRIORITY_VALUES),
   body('volume').optional().isInt({ min: 0, max: 100 }).withMessage('volume must be between 0 and 100'),
+  body('imageUrl')
+    .optional({ nullable: true })
+    .isURL({ protocols: ['https'], require_protocol: true })
+    .withMessage('imageUrl must be a valid https URL'),
 ];
 
 const updateReminderRules = [
@@ -33,7 +37,11 @@ const updateReminderRules = [
   body('priority').optional().isIn(PRIORITY_VALUES),
   body('volume').optional().isInt({ min: 0, max: 100 }).withMessage('volume must be between 0 and 100'),
   body('status').optional().isIn(STATUS_VALUES),
-  body('removeImage').optional().isIn(['true', 'false', '1', '0']),
+  body('removeImage').optional().isIn([true, false, 'true', 'false', '1', '0']),
+  body('imageUrl')
+    .optional({ nullable: true })
+    .isURL({ protocols: ['https'], require_protocol: true })
+    .withMessage('imageUrl must be a valid https URL'),
 ];
 
 const reminderIdRules = [param('id').isUUID().withMessage('Invalid reminder id')];

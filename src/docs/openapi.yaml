@@ -395,6 +395,10 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 100
+                imageUrl:
+                  type: string
+                  format: uri
+                  description: Cloudinary image URL. The app uploads the photo first, then sends this URL.
           multipart/form-data:
             schema:
               type: object
