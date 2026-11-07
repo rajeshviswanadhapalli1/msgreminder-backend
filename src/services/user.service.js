@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
-const { User } = require('../models');
+const { User, Reminder, PasswordResetToken, sequelize } = require('../models');
+const { cloudinary } = require('../config/cloudinary');
 const ApiError = require('../utils/ApiError');
 const { normalizeEmail, normalizeMobile } = require('../utils/pagination');
 const { isValidTimezone } = require('../utils/recurrence');
@@ -77,8 +78,70 @@ async function changePassword(userId, currentPassword, newPassword) {
   return { message: 'Password updated successfully' };
 }
 
+async function deleteCloudinaryImages(publicIds) {
+  const unique = [...new Set(publicIds.filter(Boolean))];
+  await Promise.all(
+    unique.map(async (publicId) => {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.error('Failed to delete reminder image from Cloudinary:', err.message);
+      }
+    })
+  );
+}
+
+async function deleteAccountByUser(user) {
+  const reminders = await Reminder.findAll({
+    where: { userId: user.id },
+    attributes: ['imagePublicId'],
+  });
+  const publicIds = reminders.map((item) => item.imagePublicId);
+
+  await sequelize.transaction(async (transaction) => {
+    await Reminder.destroy({ where: { userId: user.id }, transaction });
+    await PasswordResetToken.destroy({ where: { userId: user.id }, transaction });
+    await user.destroy({ transaction });
+  });
+
+  await deleteCloudinaryImages(publicIds);
+  return { message: 'Account deleted successfully' };
+}
+
+/** Authenticated in-app deletion. Requires the current password. */
+async function deleteAccount(userId, password) {
+  const user = await User.findByPk(userId);
+  if (!user) throw ApiError.notFound('User not found');
+
+  const valid = await user.comparePassword(password);
+  if (!valid) throw ApiError.unauthorized('Password is incorrect');
+
+  return deleteAccountByUser(user);
+}
+
+/**
+ * Public web-form deletion for Google Play Data safety.
+ * Accepts email + password so users can delete without the app.
+ */
+async function deleteAccountByCredentials(email, password) {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ where: { email: normalizedEmail } });
+  if (!user) {
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  const valid = await user.comparePassword(password);
+  if (!valid) {
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  return deleteAccountByUser(user);
+}
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  deleteAccount,
+  deleteAccountByCredentials,
 };

@@ -17,7 +17,18 @@ const changePasswordRules = [
     .isLength({ max: 128 }),
 ];
 
+const deleteAccountRules = [
+  body('password').notEmpty().withMessage('Password is required'),
+];
+
+const publicDeleteAccountRules = [
+  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+];
+
 module.exports = {
   updateProfileRules,
   changePasswordRules,
+  deleteAccountRules,
+  publicDeleteAccountRules,
 };

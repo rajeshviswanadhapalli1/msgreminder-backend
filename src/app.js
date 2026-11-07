@@ -25,6 +25,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+const publicDir = path.join(__dirname, '..', 'public');
+app.use(express.static(publicDir));
+
+app.get('/account-deletion', (req, res) => {
+  res.sendFile(path.join(publicDir, 'account-deletion.html'));
+});
+
 try {
   const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
   const swaggerDocument = YAML.load(openapiPath);

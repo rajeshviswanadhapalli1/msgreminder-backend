@@ -297,6 +297,23 @@ paths:
       responses:
         '200':
           description: Updated profile
+    delete:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      summary: Permanently delete the signed-in account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Account deleted
 
   /users/me/password:
     patch:
@@ -319,6 +336,30 @@ paths:
       responses:
         '200':
           description: Password changed
+
+  /account-deletion:
+    post:
+      tags: [Users]
+      summary: Public account deletion (Play Store Data safety link)
+      description: >
+        Deletes an account using email + password. Used by the public
+        /account-deletion web page so users can delete without the app.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Account deleted
 
   /reminders:
     get:

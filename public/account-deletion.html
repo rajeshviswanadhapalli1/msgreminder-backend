@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delete MsgReminder Account</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --blue: #1f8ffb;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --bg: #f8fafc;
+        --error: #dc2626;
+        --ok: #059669;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+      h1 { font-size: 28px; margin: 0 0 8px; }
+      p { color: var(--muted); margin: 0 0 16px; }
+      .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-top: 20px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        height: 48px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0 14px;
+        font-size: 15px;
+        margin-bottom: 14px;
+      }
+      button {
+        width: 100%;
+        height: 48px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--error);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .note {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 16px;
+      }
+      .status {
+        display: none;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .status.error { display: block; background: #fef2f2; color: var(--error); }
+      .status.ok { display: block; background: #ecfdf5; color: var(--ok); }
+      ul { padding-left: 18px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Delete your MsgReminder account</h1>
+      <p>
+        Use this page to permanently delete your MsgReminder account and related
+        reminder data. This meets Google Play’s account deletion requirement and
+        works even if the app is not installed.
+      </p>
+
+      <div class="card">
+        <h2 style="margin:0 0 12px;font-size:18px;">What gets deleted</h2>
+        <ul>
+          <li>Your profile (name, email, mobile)</li>
+          <li>All reminders and attached photos</li>
+          <li>Password reset tokens and login access</li>
+        </ul>
+        <p class="note">
+          Deletion is permanent and cannot be undone. After deletion you can
+          create a new account with the same email if you want.
+        </p>
+      </div>
+
+      <div class="card">
+        <form id="delete-form">
+          <label for="email">Account email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com" />
+
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Your password" />
+
+          <button type="submit" id="submit-btn">Permanently delete account</button>
+          <div id="status" class="status" role="status"></div>
+        </form>
+        <p class="note">
+          Signed-in users can also delete from the MsgReminder app:
+          Settings → Delete account.
+        </p>
+      </div>
+    </div>
+
+    <script src="/account-deletion.js"></script>
+  </body>
+</html>
+

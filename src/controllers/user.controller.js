@@ -31,8 +31,18 @@ async function changePassword(req, res, next) {
   }
 }
 
+async function deleteMe(req, res, next) {
+  try {
+    const result = await userService.deleteAccount(req.user.id, req.body.password);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getMe,
   updateMe,
   changePassword,
+  deleteMe,
 };
